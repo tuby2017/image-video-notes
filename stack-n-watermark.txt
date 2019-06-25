@@ -1,0 +1,22 @@
+ffmpeg -i file-0.mp4 -i c3-1.mp4 -filter_complex hstack=inputs=2 c3-2.mp4
+ffmpeg -i file-0.mp4 -i c3-1.mp4 -filter_complex "[0:v][1:v]hstack=inputs=2[v];[0:a][1:a]amerge=inputs=2[a]" -map "[v]" -map "[a]" -ac 2 c3-3.mp4
+ffmpeg -i c4-2.mp4 -i c4-1.mp4 -filter_complex amix=inputs=2 -c:a aac -ac 2 c4-3.aac
+
+cat file.txt|cut -d' ' -f1|tr -s '.' ':' > /tmp/c1
+readarry a < /tmp/c1
+for i in {0..9};do
+#../ff c file.mp4  
+ffmpeg -ss ${a[$i]} -t ${t[$i]} -i "file.mp4" -c copy -avoid_negative_ts 1 file-$i.mp4
+done 
+
+i=3
+ffmpeg -ss "${a[$i]}" -t "${c[$i]}" -i "file.mp4" -c copy -avoid_negative_ts 1 "file-$i.mp4"
+
+#"video path name.mp4" 
+ffmpeg -ss ${3} -t ${4} -i "${2}" -c copy -avoid_negative_ts 1 "${2%%.*}"-cut.${2##*.}
+
+convert -resize 90x file-0*.jpg -append -quality 95 cx.jpg
+
+https://stackoverflow.com/questions/10918907/how-to-add-transparent-watermark-in-center-of-a-video-with-ffmpeg
+
+ffmpeg -i mpv-shot0001.jpg -i cx.jpg -filter_complex 'overlay=(W-w)/2:(H-h)/2' mpv2.jpg 

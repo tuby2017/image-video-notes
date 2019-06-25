@@ -1,0 +1,45 @@
+convert -resize 33% 
+composite m2.jpg s2.jpg -displace 2x4 displace_move.jpg
+
+for i in {1..50..5};do convert m2.jpg s2.jpg +swap \
+-virtual-pixel Gray -compose Displace -define compose:args=5x"$i" -composite \
+displace_move.jpg;
+echo $i
+sleep 1
+done
+
+convert -size 422x422 plasma:fractal -blur 0x5 \
+-channel G -separate \( +clone -spread 70 \) \
+-compose overlay -composite \
+-crop 422x268 plasma_grey_shade.jpg
+
+convert m2.jpg plasma_grey_shade-0.jpg +swap \
+-compose multiply -composite \
+m3.jpg
+
+##### p-noise/
+rm p-noise/*
+for i in {1..30};do
+outimg="p-noise/p-$i"
+convert -size 422x422 plasma:fractal -blur 0x5 \
+	-channel G -separate \( +clone -spread 70 \) \
+	-compose overlay -composite \
+	-crop 422x268 $outimg.jpg
+convert $outimg-0.jpg m2.jpg -compose multiply -composite $outimg.jpg
+done
+rm p-noise/p-*-[0,1].jpg
+
+#rename 's/-0.jpg/.jpg/g' p-noise/p-*.jpg
+~~~~
+ls *jpg|cut -d'-' -f2|sort -n|sed 's/^/p-/' >list
+c=1
+for i in ${n[@]};do mv $i p-$c.jpg;c=$(( c+1 ));done
+
+###### dis/
+rm dis/*
+composite s2.jpg p-noise/p-19.jpg +swap -displace 1x2.5 dis/d-1.jpg
+for i in {1..30};do 
+composite s2.jpg p-noise/p-$i.jpg +swap -displace 1x2.5 dis/d-$i.jpg
+done
+convert -delay 20 dis/d-*.jpg dis/d.gif;mpv dis/d.gif
+#cd dis/;ffmpeg -i d.gif d.mp4; rm d.gif

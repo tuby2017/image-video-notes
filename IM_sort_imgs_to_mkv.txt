@@ -1,0 +1,36 @@
+#save image from tab, ctrl+s then move to next tab
+for i in {1..10};do
+xdotool key ctrl+s;sleep 3;xdotool key Return;sleep 2;xdotool key period;sleep 1;done
+for i in {1..10};do
+xdotool key comma;sleep 1;xdotool key x;sleep 1;done # close tabs
+
+for x in *jpg; do ../shadowhighlight -ha 70 -sa 60 -ca 40 "${x}" "${x%%.*}"-t.jpg;done
+
+#https://stackoverflow.com/questions/1555509/can-imagemagick-return-the-image-size
+#identify -format "%[fx:w]x%[fx:h]" image.jpg
+identify -ping -format '%w %h' image.jpg 
+#if width is shorter than height move to vert/
+for i in *.jpg;do a="$(identify -ping -format '%w %h' "${i}")";
+	w=$(echo $a|cut -d' ' -f1);
+	h=$(echo $a|cut -d' ' -f2);
+	#[[ $w -gt $h ]] && echo 'w is bigger'||echo horz
+	[[ $h -gt $w ]] && mv "${i}" vert/
+done
+
+#at vert/, scale image to size and new/
+for i in *;do convert -resize 640x352 "${i}" new/"${i}";done
+#528x352
+#vert/, rotate to new/
+for i in *jpg;do convert -resize 352x528 -rotate 90 "${i}" new/"${i}";done
+#at vert/new/. if resize not equal "528 325", then  echo filename width height
+for i in *;do a="$(identify -ping -format '%w %h' "${i}")";
+[[ $a != "528 352" ]] && echo "${i} $a";done
+
+#if not equal, add black padding. replace original
+for i in *;do a="$(identify -ping -format '%w %h' "${i}")";
+[[ $a != "528 352" ]] && convert -size 528x352 xc:black "${i}" -gravity center -composite $i;done
+
+#add padding
+convert -size 528x352 xc:black test.jpg -gravity center -composite test-edit.jpg
+#images to video
+cat *.jpg | ffmpeg -r 1/2 -f image2pipe -i - output.mkv

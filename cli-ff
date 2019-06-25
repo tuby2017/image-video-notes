@@ -1,0 +1,81 @@
+#!/bin/sh
+#./ff ? 
+alias ffmpeg='ffmpeg -hide_banner'
+fname=$(basename "${2}")
+case "$1" in 
+a) ### strip audio to ogg, low quality
+ffmpeg -i "${2}" -map_metadata -1 -q:a 0 -map a -c:a libvorbis -b:a 96k "${fname%.*}".ogg
+;;
+a3) ### mp3 audio
+ffmpeg -i "${2}" -c:a libmp3lame "${fname%.*}".mp3
+;;
+ac) ### aac audio
+ffmpeg -i "${2}" -acodec copy "${fname%.*}".aac
+;;
+c) ## cut video length seconds 
+ffmpeg -ss ${3} -t ${4} -i "${2}" -c copy -avoid_negative_ts 1 "${fname%.*}"-cut.${2##*.}
+;;
+c2) ## cut more precise
+ffmpeg -i "${2}" -ss ${3} -t ${4} -c copy -async 1 "${fname%.*}"-cut.${2##*.}
+;;
+cr) ## cut n re-encode
+ffmpeg -i "${2}" -ss ${3} -strict -2 -t ${4} -async 1 "${fname%.*}"-cut.${2##*.}
+;;
+l) ## concat 2=list.txt 3=output
+ffmpeg -f concat -safe 0 -i "${2}" -c copy "${3}"
+;;
+s) ## from seek to end
+ffmpeg -ss ${3} -i "${2}" -c copy -avoid_negative_ts 1 "${fname%.*}"-cut.${2##*.}
+;;
+w) ## convert to webm
+#ffmpeg -i ${2} -c:v libvpx -b:v 1M -c:a libvorbis ${fname%.*}.webm
+# ndarville/webm.md 4chan guide, no audio -an
+ffmpeg -i ${2} -c:v libvpx -b:v 550K -crf 12 -c:a libvorbis -vf scale=640:-1 -an ${fname%.*}.webm
+;;
+gw) ##gif to webm, looping webm need repeat last frame
+ffmpeg -i ${2} -r ${3} -c:v libvpx -quality good -b:v 0 -crf 15 -pix_fmt yuv420p -movflags faststart -tile-columns 2 ${fname%.*}.webm
+;;	
+m) ## convert to mp4/m4v, may fail
+ffmpeg -i "${2}" -c:v libx264 -c:a aac -strict experimental -b:a 128k -threads 2 "${fname%.*}".mp4
+ ##-vf scale=320:-1
+;;
+m0) ## mkv convert to mp4/m4, may not work
+ffmpeg -i "${2}" -c:v copy -c:a copy -c:s mov_text "${fname%.*}".mp4
+;;
+t) #screenshot
+#bold=$(tput bold)
+#normal=$(tput sgr0)
+k=$(date +%T|tr : -); #format time, hr-min-ss
+out=$(echo "${fname%.*}"-$k.jpg|tr '[A-Z]' '[a-z]');
+ffmpeg -i "${2}" -ss "${3}" -vframes 1 "${out}"
+echo '';echo $(tput bold) $out
+;;
+i) ## view file info
+ffmpeg -i "${2}"
+;;
+ik) ## view total key frames, speed depend on filesize
+ffprobe -v error -count_frames -select_streams v:0 -show_entries stream=nb_read_frames -of default=nokey=1:noprint_wrappers=1 "${2}"
+;;
+id) ## view durations
+ffprobe -v 0 -show_entries format=duration -of compact=p=0:nk=1 "${2}"
+;;
+?) ##display command
+#cat "`pwd`"ff|grep ")""
+cat ~/bin/ff|grep ")"
+;;
+*) #nothing
+echo "nothing done"
+;;
+esac
+
+: << '@nouse'
+a) ### maap --nouse
+echo $1 ${2}
+
+;;
+*)
+echo $2
+;;
+esac
+@nouse
+exit 1

@@ -1,0 +1,49 @@
+#!/bin/bash
+# This Is Not A Script, examples only.
+#https://trac.ffmpeg.org/wiki/StreamingGuide#CPUusageFilesize
+
+#put server and steamkey variables in another folder 
+# server=live-jfk; key='live_rand_rand'
+source file_path
+
+#files' name into array
+vid=(file1 file2) # 'file 1' 'file 2', etc.
+
+#or
+ls|grep flv|sort -n > file.txt
+readarray vid < file.txt
+# vid+=('foo') #adding to array
+
+#cd to videos folder, or folderName/"${i}".flv
+# while loop, or ffmpeg -re -stream_loop -1 -i file.flv
+while :;do 
+ for i in ${vid[@]};do
+  echo $i; ffmpeg -re -i "${i}".flv -c copy -f flv "rtmp://${server}.twitch.tv/app/${key}";
+done;
+sleep 1;
+done
+	#not sure about -deinterlace 
+
+
+#https://trac.ffmpeg.org/wiki/Concatenate#demuxer
+#https://trac.ffmpeg.org/wiki/EncodingForStreamingSites
+#concat mp3, or same type of files with still image. convert to flv
+	# video might be upsidedown in videoplayer, it wont be in twitch stream
+#144p video, change -vf scale=
+#audio quality is okay, can change -b:a 128k -ar 44100
+bv=5k   #change video quality/bitrate
+mx=700k #video maxrate, depend on upload speed. wiki *EncodingForStreamingSites
+out=mp3_concat     #output filename
+FList=/tmp/new.txt #concat_FilesList
+
+ffmpeg -f concat -safe 0 -i "${FList}" -loop 1 -f image2 -i image.png \
+-c:v libx264 -tune stillimage -shortest -b:v $bv -maxrate $mx \
+-bufsize 1600k -vf scale=256:-2,format=nv12 -g 26 \
+-c:a aac -b:a 128k -ac 2 -ar 44100 \
+$out.flv
+
+#end
+#http://ksloan.net/watermarking-videos-from-the-command-line-using-ffmpeg-filters/
+
+#run in another terminal to check if script ended
+while :;do if pgrep -x cli-stream_files_to_twitch.sh > /dev/null;then e=1;sleep 600;else e=0;sleep 1;timeout 10 java -jar $arply.jar -h $ip -d;fi;[[ $e == 0 ]] && break;done;echo fin

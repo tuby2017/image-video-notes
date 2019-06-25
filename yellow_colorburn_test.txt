@@ -1,0 +1,136 @@
+sleep 2;xdotool key --clearmodifiers F4;
+sleep 2;for i in $(seq 1 $a);do 
+xdotool key --clearmodifiers --repeat 3 Page_Down;sleep 1;
+xdotool key --clearmodifiers comma;
+sleep 1;
+done
+#xdotool click 1;sleep 2
+
+sleep 2;for i in $(seq 1 $a);do 
+sleep 1.3; xdotool click --repeat 3 1
+sleep 2; xdotool key --clearmodifiers ctrl+c;
+sleep .5; wmctrl -a Untitle
+sleep 1; xdotool key --clearmodifiers ctrl+v;
+sleep .5; xdotool key --clearmodifiers Left;
+sleep 2;
+#sleep .5; xdotool key --clearmodifiers Return;
+xdotool key --delay 0.5 --clearmodifiers Alt+space;
+sleep .5;xdotool key comma
+done
+
+f=darken burn
+#bash: ctrl + s / ctrl+q suspend or resume process 
+
+m4s=(
+'burn'
+'glow'
+'heat'
+'normal'
+'reflect'
+)
+
+p=0.5
+for x in "${m4s[@]}"; do
+ffmpeg -i $o -vf "movie=$i [fix]; [in] setsar=sar=1,format=rgba,lutrgb=a=0.5 [inf]; [inf][fix] blend=all_mode=$x:all_opacity=$p,format=yuva422p10le [out]" -y $v; \
+timeout 2 mpv $v;
+echo '';echo $x
+sleep 2;
+done
+
+for x in "${m4s[@]}"; do
+for n in {1..9};do
+p=$(echo 0.$n)
+ffmpeg -i $i -vf "movie=$o [fix]; [in] setsar=sar=1,format=rgba [inf]; [inf][fix] blend=c3_mode=burn:all_opacity=$p[out]" -y $v; \
+timeout 2 mpv $v;
+echo '';echo $p;sleep 1
+done 
+
+for n in {1..9};do
+p=$(echo 0.$n)
+ffmpeg -i $o -vf "movie=$i [fix]; [in] setsar=sar=1,format=rgba [inf]; [inf][fix] blend=c0_mode=burn:c0_opacity=$p[out]" -y $v; \
+timeout 2 mpv $v;
+echo '';echo $p;sleep 2
+done 
+
+ffmpeg -i $i -vf lutyuv=y='bitand(val, 128+64+32)' -y $v
+lutyuv=u='(val-maxval/2)*2+maxval/2':v='(val-maxval/2)*2+maxval/2'
+
+ffmpeg -i $i -i $o -filter_complex "[0:v]setsar=sar=1[v];[v][1]blend=all_mode=average:all_opacity=0.7" -y $v; \
+timeout 1.2 mpv $v
+
+-filter_complex "[1:v]format=rgba,colorchannelmixer=aa=0.7[fg];[0][fg]overlay"
+
+for x in "${m4s[@]}"; do
+ffmpeg -i $i -vf "movie=$o [fix]; [in] setsar=sar=1,format=rgba [inf]; [inf][fix] blend=c3_mode=$x:all_opacity=$p[out]" -y $v; \
+timeout 2 mpv $v;
+echo '';echo $x;sleep 1
+done
+
+m4s=(
+'burn'
+'normal'
+'overlay'
+'average'
+'screen'
+'multiply'
+'lighten'
+)
+
+m4s=(
+'burn'
+'glow'
+'heat'
+'lighten'
+'normal'
+'overlay'
+'reflect'
+'vividlight'
+)
+
+ffplay temp3.png -vf lutyuv=y=gammaval\(2.5\),lutrgb="r=val+50:g=val-50"
+ffplay temp3.png -vf lutyuv=y=gammaval\(5.5\),lutrgb="r=val+50:g=val-15:b=55"
+
+ffmpeg -i temp3.png -filter_complex "
+[0:v]colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131[colorchannelmixed];
+[colorchannelmixed]eq=1[color_effect]" -map [color_effect] out.jpg
+
+for i in {1..50};do
+a=$(echo $((1 + RANDOM % 10)))
+b=$(echo $((1 + RANDOM % 10)))
+c=$(echo $((1 + RANDOM % 10)))
+timeout 1.2 ffplay -hide_banner temp3.png -vf "colorchannelmixer=.$a:.$b:.$c: \
+.$b:.$c:.$a: \
+.$c:.$a:.$b"
+echo '';echo "$a:$b:$c, $b:$c:$a, $c:$a:$b";sleep 2
+done
+
+for i in {1..50};do
+a=$(echo $((1 + RANDOM % 50)))
+b=$(echo $((1 + RANDOM % 50)))
+c=$(echo $((1 + RANDOM % 100)))
+timeout 1.2 ffplay -loglevel panic -hide_banner temp3.png -vf lutyuv=y=gammaval\(2.5\),lutrgb="r=clipval+$a:g=val-$b:b=$c"
+echo '';echo "$a, $b, $c";sleep .5
+done
+
+z=
+2,23,11
+23,18,52
+a=$(echo $z|cut -d, -f1);b=$(echo $z|cut -d, -f2);c=$(echo $z|cut -d, -f3)
+
+
+timeout 2 ffplay -i ../temp.png -loglevel panic -hide_banner -vf lutyuv=y=gammaval\($p.5\),lutrgb="r=val+$a:g=val-$b:b=$c"
+
+z=16,43,52
+45,10,55
+timeout 2 ffplay -i ../temp.png -loglevel panic -hide_banner -vf lutyuv=y=gammaval\($p\),lutrgb="r=clipval+$a:g=val-$b:b=$c"
+
+
+z=10,10,18
+ffmpeg -loglevel panic -hide_banner -i mpv-shot0001.jpg -vf lutyuv=y=gammaval\(1.5\),lutrgb="r=val+$a: \
+b=val-$b: \
+g=$c+val" output_3.mkv
+
+z=15,4,42
+g=val+$a: \
+r=val-$b: \
+b=$c+val"

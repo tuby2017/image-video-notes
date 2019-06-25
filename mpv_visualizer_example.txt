@@ -1,0 +1,44 @@
+ vertical stacks of showvolum 260x50, blackground is checkboard if no album art, and showspectrum 101x150;  
+a=moreland #spectrum color=channel, intensity, moreland, rainbow, nebulae, fire,fiery,fruit,cool or [1 - 8].  
+[c] doesnt have anything. in my test, to stack 3 filter vertically,   `[c]foo[filter3];[v][s]vstack[stack1];[filter3][stack1]vstack[vo]`  
+and [c] also need to have matching width. Else the ouput failed.
+
+	mpv --lavfi-complex="[aid1]asplit=4[ao][a][b][c]; [a]showvolume=r=20:o=v:w=260:h=50:t=0:f=0.34[v];[b]showspectrum=s=101x150:orientation=horizontal:scale=cbrt:color="$a":saturation=4.5[s]; \
+	[v][s]vstack[vo]" --hr-seek "$music_file"
+
+----
+
+ small horizontal stacks of ffmpeg filter, showvolume 200x15 and showspectrum 100x31, then flip and limit to 2 threads. some variable and color won't work in lavfi-complex.  
+If width or height is wrong, mpv should output statment with valid number to try. Filters switchs spot by `[v][s]hstack` to [s][v]hstack.  
+msg-level changes to surpress buffer queue overflow message. 
+
+	mpv --lavfi-complex="[aid1]asplit=3[ao][a][b]; [a]showvolume=r=12:w=200:h=15:s=1:v=0:t=0:f=0.34[v];[b]showspectrum=s=100x31:slide=2:scale=cbrt:color=moreland:saturation=4.5[s]; \
+	[s][v]hstack[vo]" --vf=lavfi="hflip" --vd-lavc-threads=2 --msg-level=all=warn,ao/alsa=error http_music.m3u
+	
+
+
+++references:: https://pastelink.net/j87t
+or
+lua scipt example
+#http://blog.fraggod.net/2018/04/12/mpv-audio-visualization.html
+5 filter om one screen
+#http://johnwarburton.net/blog/?p=89487
+last comment, sinewave
+#https://bbs.archlinux.org/viewtopic.php?id=203271
+
+ffmpeg filter code with video example 
+#http://lukaprincic.si/development-log/ffmpeg-audio-visualization-tricks
+ffmpeg video and audio example wiki
+#https://trac.ffmpeg.org/wiki/FancyFilteringExamples
+more example
+#https://video.stackexchange.com/questions/9644/how-do-i-turn-audio-into-video-that-is-show-the-waveforms-in-a-video
+how to stack
+#https://stackoverflow.com/questions/11552565/vertically-or-horizontally-stack-several-videos-using-ffmpeg
+#ffplay
+filter manual
+#https://ffmpeg.org/ffmpeg-filters.html#showspectrum-1
+mpv reference
+#https://mpv.io/manual/master/#options-lavfi-complex
+	#https://mpv.io/manual/master/#options-vd-lavc-threads
+showcqtbar filter webpage showcase
+#https://mfcc64.github.io/html5-showcqtbar/index.html?s=auto

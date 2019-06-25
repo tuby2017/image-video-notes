@@ -1,0 +1,41 @@
+#notes for spidy 
+ ffmpeg -i $video -vf "select=eq(pict_type\,I)" -q:v 4 -vsync vfr frames/f%04d.jpeg -hide_banner
+ 
+ ffmpeg -ss 0:50:50 -i -t 300 -c copy -avoid_negative_ts 1 $video
+ffmpeg -i $video -vf "fps=$f" -vsync vfr frames/f%04d.jpeg
+ffmpeg -i $in -vf lutrgb="g=maxval+minval-val,fps=$f" -vsync vfr temp/f%04d.jpeg -hide_banner
+
+in=f0925.jpeg ;out=a.jpg;o=b
+# convert -channel green -negate $in $out;
+convert $in $out -compose multiply -composite $o2.jpg;timeout 2 mpv $o2.jpg
+# ffplay -i $in -vf edgedetect=mode=colormix:low=0.3,pp=al,curves=lighter
+ffplay -i $in -vf edgedetect=mode=colormix:low=0.3,pp=al,curves=lighter,eq=gamma=2.5:contrast=1.6:saturation=12,scale=720:-2
+
+cd frames && for x in *.jpeg; do convert $x ../temp/$x -compose multiply -composite ../outf/$x;done;
+cd ../outf
+#cd outf/
+for i in *jpeg;do ffmpeg -y -hide_banner -loglevel panic -i $i -vf format=rgba,edgedetect=mode=colormix:low=0.3,pp=al,curves=lighter,eq=gamma=2.5:contrast=1.6:saturation=12,scale=720:-2,format=yuva422p10le ../o2-scale/$i;echo $i;done
+
+#while :;do nb=$(echo $((1 + RANDOM % 5000)));(( $nb < 1000 && $nb >= 100 )) && nb=0$nb;(( $nb < 100 && $nb >= 10 )) && nb=00$nb;[[ $nb -lt 10 ]] && nb=000$nb;timeout 3 mpv --quiet --fullscreen f$nb.jpeg;done
+
+#o2-scale/
+ffmpeg -framerate 23.98 -i f%04d.jpeg -c:v libx264 ../s3-an.mp4
+
+ffmpeg -i $video -map 0:a -c:a aac -b:a 128k -af "dynaudnorm=p=1/sqrt(2):m=100:s=12:g=15" audio.aac
+
+ffmpeg -i s3-an.mp4 -i audio.aac -vf pp=de,sab -preset slow -r 12 -tune animation -shortest s4.mp4;
+
+#change audio tempo, length
+ffmpeg -i input.wav -codec:a libmp3lame -filter:a "atempo=0.9992323" -b:a 320K output.mp3
+##desired length / Audio length = atempo #stretch
+##Audio length / desire =atemp #shorter
+a=212.25
+b=245.5
+c=$(bc -l <<< $a/$b)
+
+ffmpeg -i audio.aac -c:a aac -af "atempo=$c" -b:a 96k scale.aac
+
+### smaller size overall
+ffmpeg -i $video -vf scale=360:148,fps=22 -r 24 -crf 22 s2-scale.mp4
+
+ffmpeg -i movie.mp4 -vf scale=360:148,fps=22 -b:v 150k -b:a 49k -r 23.98 ../s-scale.mp4

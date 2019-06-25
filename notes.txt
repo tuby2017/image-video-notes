@@ -1,0 +1,52 @@
+#disable excutable
+chmod u-x+X script.sh 
+#subtitle convert
+ffmpeg -i .lrc|vtt|srt .srt 
+
+#avi to mp4
+for x in {02..05};do ffmpeg -i "video_name${x}.avi" -c:v libx264 -c:a aac -b:a 128k -threads 2 ../E$x.mp4;done
+
+#symlink filename with spaces
+for i in {01..10};do a=$(ls|grep video_name_E${i});b=$(echo "`pwd`/$a");ln -s "${b}" ~/E$i.mp4;done 
+
+#mkv (encode in h.264) to mp4
+for i in {01..06};do ffmpeg -i "video_name_E"$i".mkv" -c:v copy -c:a copy ../"E"$i"".mp4;done
+
+#use filenames in array 
+m4s=('z1.mp4' 'w2.avi' 'w2-loop.mp4' 'z3.avi' 'z4-2.mp4' 'z4-end.avi' 'z4-2.mp4')
+    for i in "${m4s[@]}"; do
+ffmpeg -i "${i}" -c:v libx264 -crf 17 -r 8 -b:v 3M -strict -2 -movflags faststart new/"${i%%.*}".mp4 
+    done
+#for i in ${m4s[@]}; do cp $i m4/$i;done
+
+mpv https://user:password@www_website_vid_path
+
+#images to gif (IM). gif to mp4 
+convert -delay 22 *.png -loop 0 movie.gif
+ffmpeg -y -i movie.gif -movflags faststart -pix_fmt yuv420p -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -crf 17 out.mp4
+ffmpeg -i out.mp4 -filter_complex loop=loop=20:size=52:start=1 loop.mp4
+
+#m3u8 to mp4
+ffmpeg  -i 'https_index_m3u8' -c copy -bsf:a aac_adtstoasc output.mp4
+
+#images to mp4 start from 0042
+ffmpeg -y -framerate 6 -start_number 42 -i new/h%04d.jpeg -c:v libx264 -q:v 2 -an new/d.mp4
+
+#extend_last_frame_old_version.txt
+	https://stackoverflow.com/questions/43414641/repeat-last-frame-in-video-using-ffmpeg
+ffmpeg -f lavfi -i nullsrc=s=1192x670:d=2.5:r=12 -i in.mp4 -filter_complex "[0:v][1:v]overlay,fade=out:25:5,scale=640:-2[video]" -map "[video]" -an out.mp4
+
+#emboss effect
+ffmpeg -i $in -vf convolution="-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2" $out
+#scale
+ffmpeg -i $in -vf scale=720:-2 $out
+#to webm
+ffmpeg -i ${a} -c:v libvpx -b:v 550K -crf 12 -c:a libvorbis -vf scale=640:-1 ${a%%.*}.webm
+#crop
+ffmpeg -i in.mp4 -filter:v "crop=in_w:in_h-40" -c:a copy out.mp4
+
+#else
+mp4box -ffmpeg alt
+dthpham/butterflow -ffmpeg -add frames to smooth video
+welpo/spectro -bash -sox -ffmpeg -audio spectrograms, outputs BBCode. 
+r128gain -py -ffmpeg -audio loudness tagger

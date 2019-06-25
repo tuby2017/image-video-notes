@@ -1,0 +1,81 @@
+alias ff='ffmpeg -hide_banner'
+
+ffplay -vf eq=brightness=0.3:saturation=2 xxxx.png
+
+convert fish.jpg -channel all -contrast-stretch 0.003x0.003% fish2.jpg
+convert x2.png -channel all -contrast-stretch 15% x3.png; timeout 3 mpv x3.png
+
+ffmpeg -i fish.jpg -vf "format=rgb24,extractplanes=r+g+b[r][g][b],[r]histeq=strength=.1[r2],[g]histeq=strength=.1[g2],[b]histeq=strength=.1[b2],[g2][b2][r2]mergeplanes=0x001020:gbrp" fish3.jpg
+
+antibanding=weak strong
+
+###
+ffmpeg -i xxxx.png -vf curves=lighter x2.png
+
+ffmpeg -i xxxx.png -vf "format=rgb24,extractplanes=r+g+b[r][g][b],[r]histeq=strength=.1[r2],[g]histeq=strength=.1[g2],[b]histeq=strength=.1[b2],[g2][b2][r2]mergeplanes=0x001020:gbrp" x3.png
+
+convert x3.png -channel all -contrast-stretch 0.05x0.05% x4.png
+
+ffplay -i x4.png -vf elbg=l=7:s=-1:n=100
+
+ffplay -i x2.png -vf lutrgb="g=maxval+minval-val"
+convert x2.png x1.png -compose multiply -composite x2.5.png;timeout 2 mpv x2.5.png
+
+in=x4.png;out=x5.png;o2=x6
+convert -channel green -negate $in $out;
+convert $in $out -compose multiply -composite $o2.jpg;timeout 2 mpv $o2.jpg
+
+#######
+f=10
+ffmpeg -i $vid2 -vf "fps=$f" -q:v 3 -vsync vfr frames/key_%04d.jpeg -hide_banner
+
+# rm frames/* elbg/*
+cd frames
+#cd ../frames
+for i in *jpeg; do ffmpeg -y -i "${i}" -vf "format=rgb24,extractplanes=r+g+b[r][g][b],[r]histeq=strength=.1[r2],[g]histeq=strength=.1[g2],[b]histeq=strength=.1[b2],[g2][b2][r2]mergeplanes=0x001020:gbrp,format=gray,elbg=l=5:s=-1:n=100" ../elbg/"${i}";done
+
+cd ../elbg
+ffmpeg -framerate $f -i key_%04d.jpeg -c:v libx264 -pix_fmt yuv420p $vid3;
+
+ffplay -i $vid2 -vf "format=rgb24,extractplanes=r+g+b[r][g][b],[r]histeq=strength=.1[r2],[g]histeq=strength=.1[g2],[b]histeq=strength=.1[b2],[g2][b2][r2]mergeplanes=0x001020:gbrp,format=gray,elbg=l=7:s=-1,tblend" -r 30
+
+ffmpeg -i $vid3 -vf minterpolate=15,tblend=all_mode=average,framestep=4 -r 10 $vid4
+
+###
+### ffmpeg -i $video -vf "format=rgb24,extractplanes=r+g+b[r][g][b],[r]histeq=strength=.1[r2],[g]histeq=strength=.1[g2],[b]histeq=strength=.1[b2],[g2][b2][r2]mergeplanes=0x001020:gbrp,format=gray,elbg=l=7:s=-1:n=120,minterpolate=32" $gray_output
+
+ffmpeg -i $in -vf lutrgb="g=maxval+minval-val,fps=$f" -q:v 3 -vsync vfr green/key_%04d.jpeg -hide_banner
+
+cd frames && for x in *.jpeg; do convert -quality 100 $x ../green/$x -compose multiply -composite ../temp/$x;done;
+cd ../temp && for x in *.jpeg; do jpegtran -optimize -copy none -perfect -v "$x" > "../outf/$x"; done;
+
+ffmpeg -framerate 24 -i key_%04d.jpeg -vf edgedetect=mode=colormix:low=0.3,eq=gamma=2:saturation=1.6:contrast=1.2,format=yuv420p -preset slow -crf 28 -tune animation ../$vid3-silent #a5.jpg
+ffmpeg -i $vid3-silent -i audio.aac -c copy -shortest $vid3;
+# https://stackoverflow.com/questions/11779490/how-to-add-a-new-audio-not-mixing-into-a-video-using-ffmpeg
+
+###
+ffmpeg -i $input -vf "format=rgb24,waveform=c=7:d=parade,scale=1200x512" -vframes 1 frame1parade.png
+
+ffplay $vid3 -vf pp=al
+ffpay jpeg -vf eq=contrast=1.2:gamma=2
+-vf sab
+ffmpeg $pic -vf pp=de,curves=lighter a3.jpg
+# ffmpeg $pic -vf pp=de,curves=lighter,curves=increase_contrast a3.jpg
+ffmpeg -i $pic -vf pp=al,edgedetect=mode=colormix:low=0.1:high=0,curves=lighter a4.jpg 
+# pp=de, .. high=0.2
+ffmpeg -y -i key_1009.jpeg -vf edgedetect=mode=colormix:low=0.3,eq=gamma=2:saturation=1.6:contrast=1.2 a5.jpg
+
+
+# ffmpeg -y -i -vn -c:a aac -b:a 128k -af "pan=stereo|FL < FL+1.414FC+0.5BL+0.5SL+0.25LFE+0.125BR|FR < FR+1.414FC+0.5BR+0.5SR+0.25LFE+0.125BL,firequalizer=gain='if(gte(f,16),0,-INF)+if(lte(f,16000),0,-INF)',dynaudnorm=p=1/sqrt(2):m=100:s=12:g=15,firequalizer=gain='if(gte(f,16),0,-INF)+if(lte(f,16000),0,-INF)',aresample=resampler=soxr:osr=48000:cutoff=0.990:dither_method=none" audio.aac
+#-f matroska "%~n1_dn.mkv"
+
+-af "dynaudnorm=p=1/sqrt(2):m=100:s=12:g=15"
+#dynaudnorm=f=150:g=15
+#f=50:g=9
+
+ffmpeg -i stereo_input.foo -filter_complex showwavespic -frames:v 1 output.png
+# https://stackoverflow.com/questions/32254818/generating-a-waveform-using-ffmpeg
+# https://video.stackexchange.com/questions/22345/comparing-audio-waveform-in-a-visual-and-or-numeric-way
+sox  audio.ogg -n spectrogram -arl -o a1.jpg
+# imagemagick
+composite spectrogram_1.png spectrogram_2.png -compose difference spectrograms_difference.png

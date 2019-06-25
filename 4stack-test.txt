@@ -1,0 +1,73 @@
+640x360
+360x320
+255x144
+320-206=114
+#./ff l list.txt result.mp4
+$ convert -background black -resize x320 -extent 360x320 -gravity center $input -quality 95 xz2-1.jpg 
+convert -background black -resize 360x -extent 360x434 -gravity south $input -quality 95 xz2-1.jpg 
+
+$ ffmpeg -i mpv-shot0001.jpg -vf scale=360:320 xs2.jpg
+ffmpeg -i xz2.jpg -filter_complex "[0:v][0:v]vstack,transpose" xs-t.jpg
+
+ffmpeg -i xz2-1.jpg -i xs2.jpg \
+-filter_complex \
+"[0:v][1:v]vstack,transpose" \
+xs-t.jpg
+
+ffmpeg -i $video -i xz2-1.jpg \
+-filter_complex \
+"[0:v]scale=360:-1[g];
+[1:v][g]vstack,transpose" \
+-y xs-t.mp4
+
+
+===
+ffmpeg -i xs2.jpg -i xs1.jpg \
+-filter_complex \
+"[0:v]transpose=0,scale=320:360[g]; \
+[1:v]transpose=3,scale=320:360[b]; \
+[b][g]hstack[v]" \
+-map "[v]" -y xs-t.jpg
+
+
+ffmpeg -i xs2.jpg -i xs1.jpg \
+ffmpeg -i xs2.jpg \
+-filter_complex \
+"[0:v]transpose=1[g]; \
+[0:v]transpose=1[b]; \
+[b][g]hstack[v]" \
+-map "[v]" -y xs-t.jpg
+
+ffplay xs2.jpg -vf transpose=4
+
+right-up, left-up, right-d, left-d, 
+transpose=2,hflip
+transpose=3,hflip
+transpose,hflip
+transpose=1,hflip
+
+ffmpeg -i xs2.jpg \
+-filter_complex \
+"[0:v]transpose=2,hflip[a]; \
+[0:v]transpose=3,hflip[b]; \
+[0:v]transpose,hflip[c]; \
+[0:v]transpose=1,hflip[d]; \
+[b][a]hstack[h]; \
+[d][c]hstack[x]; \
+[h][x]vstack[v]" \
+-map "[v]" -y xs-t.jpg
+
+#same above, shorter
+ffmpeg -i xs2.jpg \
+-filter_complex \
+"[0:v]transpose=2,hflip[a]; \
+[0:v]transpose=3,hflip[b]; \
+[b][a]hstack,split[u][n]; \
+[n]vflip[j]; \
+[u][j]vstack[v]" \
+-map "[v]" -y xs-t.jpg
+
+#im
+montage -background black -resize 51% @list -geometry +10+10 z1.jpg
+https://people.debian.org/~naoliv/misc/imagemagick/link/www/montage.html
+montage -background none -resize 530x @list -tile 1x -geometry +10+10 z0.png 

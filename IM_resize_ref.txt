@@ -1,0 +1,27 @@
+ffmpeg -i $in -vf scale=640x-2 -crf 28 ../scale/$in
+---
+https://www.smashingmagazine.com/2015/06/efficient-image-resizing-with-imagemagick/
+mogrify -path OUTPUT_PATH -filter Triangle -define filter:support=2 -thumbnail OUTPUT_WIDTH -unsharp 0.25x0.08+8.3+0.045 -dither None -posterize 136 -quality 82 -define jpeg:fancy-upsampling=off -define png:compression-filter=5 -define png:compression-level=9 -define png:compression-strategy=1 -define png:exclude-chunk=all -interlace none -colorspace sRGB INPUT_PATH
+
+---
+smartresize() {
+   mogrify -path $3 -filter Triangle -define filter:support=2 -thumbnail $2 -unsharp 0.25x0.08+8.3+0.045 -dither None -posterize 136 -quality 82 -define jpeg:fancy-upsampling=off -define png:compression-filter=5 -define png:compression-level=9 -define png:compression-strategy=1 -define png:exclude-chunk=all -interlace none -colorspace sRGB $1
+}
+
+smartresize inputfile.png 300 outputdir/
+
+---
+for file in *.jpg; do convert $file -resize 1012x -unsharp 0x0.55+0.55+0.008 -quality 90% small-$file; done
+
+---
+https://stackoverflow.com/questions/7261855/recommendation-for-compressing-jpg-files-with-imagemagick
+
+convert -strip -interlace Plane -gaussian-blur 0.05 -quality 85% source.jpg result.jpg
+
+convert image.jpg -sampling-factor 4:2:0 -strip -quality 85 -interlace JPEG -colorspace RGB image_converted.jpg
+
+mogrify -quality "97%" -resize 2048x2048 -filter Lanczos -interlace Plane -gaussian-blur 0.05 
+
+convert -strip -interlace Plane -gaussian-blur 0.05 -quality 60% -adaptive-resize 60% img_original.jpg img_resize.jpg
+
+convert image.jpg -define jpeg:extent=150kb result.jpg

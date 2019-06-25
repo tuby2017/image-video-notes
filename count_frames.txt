@@ -1,0 +1,36 @@
+ffprobe -v error -count_frames -select_streams v:0 -show_entries stream=nb_read_frames -of default=nokey=1:noprint_wrappers=1 input.mkv
+
+rm frame
+for i in e*mp4;do z=$(ffprobe -v error -count_frames -select_streams v:0 -show_entries stream=nb_read_frames -of default=nokey=1:noprint_wrappers=1 $i);
+f=$(echo $i|cut -d'.' -f1)
+echo $f $z >> frame
+done
+
+total=0; for i in $( awk '{ print $2; }' frame );\
+do total=$(echo $total+$i | bc ); 
+done;echo $total
+
+ffmpeg -i input.mp4 -vf "fade=in:0:25,fade=out:975:25:alpha=1" -acodec copy out.mp4
+## e-all2
+file 'e-6-subtle.mp4' 0 28
+file 'e-eyelid.mp4' 33 28 61
+file 'e-6-subtle.mp4' 28 61 89
+file 'e-6-subtle.mp4' 28 89 117
+file 'e-6-subtle.mp4' 28 117 145
+file 'e-6-subtle.mp4' 28 145 173 or 61+28*4
+file 'e-1.mp4' 55 173 228
+file 'e-2.mp4' 28 
+file 'e-2.mp4' 28
+file 'e-chR-lvl62-Sin7-rblur30.mp4' 28
+file 'e-chR-lvl62-Sin7-rblur30.mp4' 28
+file 'e-DilateDiskNegate-lvl22-sin7.mp4' 28
+file 'e-DDN-sigContrast10_30-sin-4.mp4' 28
+
+####
+file 'e-1.mp4'
+file 'e-2.mp4'
+file 'e-chR-lvl62-Sin7-rblur30.mp4'
+file 'e-DDN-sigContrast10_30-sin-4.mp4'
+file 'e-DilateDiskNegate-lvl22-sin7.mp4'
+file 'e-6-subtle.mp4'
+file 'e-eyelid.mp4'

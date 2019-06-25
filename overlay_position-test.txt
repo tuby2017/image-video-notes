@@ -1,0 +1,33 @@
+file 'l2.mp4'
+file 'l1.mp4'
+file 'l3.mp4'
+file 'l4.mp4'
+ffmpeg -i l2-cut.mp4 -i 090.jpg \
+-filter_complex "overlay=x=0:3" birds2.mp4
+
+https://stackoverflow.com/questions/11552565/vertically-or-horizontally-stack-several-videos-using-ffmpeg
+ffmpeg -i 090.jpg -i l2-cut.mp4 -filter_complex hstack=inputs=2 birds2.mp4
+
+#increase width, stack pic at right
+ffmpeg -y -i l2-cut.mp4  -i 090.jpg \
+-filter_complex "pad=width=iw+220,overlay=x=main_w-220:y=(main_h-overlay_h)/2" \
+birds2.mp4
+
+#l1
+ffmpeg -y -i l1.mp4  -i $img \
+-filter_complex "overlay=overlay_w*3.5:y=overlay_h-220" $out
+
+#l2
+ffmpeg -y -i l2.mp4  -i $img \
+-filter_complex "overlay=0:y=overlay_h-220" $out
+
+#l3
+ffmpeg -y -i l3.mp4  -i $img \
+-filter_complex "overlay=x=(main_w-overlay_w):y=(main_h-overlay_h)-100" $out
+
+#l4
+ffmpeg -y -i l4.mp4  -i $img \
+-filter_complex "overlay=x=(main_w-overlay_w):400" $out
+
+ffplay -i $in -vf "crop=in_w:in_h-205"
+ffmpeg -i $in -vf scale=640x350 -c:v libx264 -crf 22 -preset veryslow -c:a copy 2.mp4

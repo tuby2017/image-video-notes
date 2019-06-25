@@ -1,0 +1,166 @@
+ffmpeg -i $in -vf convolution="-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2" $out
+
+ffmpeg -y -i $out -vf "minterpolate='fps=30'" z-p2.mp4;mpv z-p2.mp4
+#ffmpeg -i $in -filter:v "minterpolate='mi_mode=mci:mc_mode=aobmc:vsbmc=1:fps=120'" $out
+#ffmpeg -i $in -vf minterpolate=$m,tblend=average,framestep=$s $out
+ffmpeg -i $in -vf "tblend=all_mode=grainextract" -r 20 -c copy $out
+ffmpeg -i $in -i $in2 -filter_complex "blend=multiply" $out
+
+c=c1_mode;f=average;s=12
+$timeout 1 
+ffmpeg -y -i $in -vf "tblend=$c=$f,minterpolate='fps=30',framestep=$s" $out;timeout 5 mpv z-p.mp4 
+
+for i in "${m4s[@]}"; do
+timeout 2 ffmpeg -y -i $in -vf "tblend=$i,framestep=$s" -r 20 $out;timeout 5 mpv z-p.mp4 
+echo ' ';echo $i;sleep 2
+done
+
+#addition,framestep=4
+
+m4s=(
+'average'
+'darken'
+'exclusion'
+'lighten'
+'negation'
+'softlight'
+)
+
+in=xv.mp4;out=z-p.mp4;o2=z-p2.mp4;
+c=all_mode;f=average;s=4 #s=7;s=12
+s=12
+ffmpeg -y -i $in -vf "minterpolate='fps=23'" $out; timeout 3 mpv $out
+ffmpeg -y -i $out -vf "tblend=$c=$f,framestep=$s" $o2;timeout 3 mpv $o2
+ffmpeg -y -i $o2 -vf "minterpolate='fps=12'" -r 20 $out; timeout 3 mpv $out
+ffmpeg -i $o2 -filter:v "minterpolate='mi_mode=mci:me_mode=bilat:vsbmc=1:fps=12'" -r 20 $out;timeout 3 mpv $out
+
+c=c1_mode;s=7;f=darken;o3=z-p3.mp4
+ffmpeg -y -i $in -vf "minterpolate='fps=23'" $out; #fps = 25 or 30
+ffmpeg -y -i $out -vf "tblend=$c=$f,framestep=$s" $o2;
+ffmpeg -y -i $o2 -vf "minterpolate='fps=8'" -r 20 $o3; timeout 3 mpv $o3
+#ffmpeg -y -i $o2 -filter:v "minterpolate='mi_mode=mci:me=fss:fps=8'" -r 20 $o3;timeout 3 mpv $o3 #mi_mode=blend #fast
+
+c=all_mode;s=5;f=average; #s=12
+ffmpeg -y -i $in -vf "tblend=$c=$f,framestep=$s" $out;
+p=10;r=13 #p=13;r=20
+ffmpeg -y -i $out -vf "minterpolate='fps=$p'" -r $r $o2; timeout 3 mpv $o2
+#-max_muxing_queue_size 1024
+
+../ff t $in {time} #screenshot
+maxval+minval-val
+ffmpeg -i $in -vf lutrgb="g=maxval+minval-val" $out.jpg
+convert -channel green -negate $in $out.jpg;
+convert $in $out.jpg -compose multiply -composite $o2.jpg;timeout 2 mpv $o2.jpg
+
+##??
+ffmpeg -i "$1" -i "$2" \
+-filter_complex "[1:0] setsar=sar=1,format=rgba [1sared]; [0:0]format=rgba [0rgbd]; [0rgbd][1sared]blend=all_mode='addition':repeatlast=1:all_opacity=1,format=yuva422p10le" \
+-c:v libx264 -preset slow -tune film -crf 19 \
+-c:a aac -strict -2 -ac 2 -b:a 256k \
+-pix_fmt yuv420p "$3"
+
+
+==overlay, multiply
+ffmpeg -i ttt.jpg -vf "movie=fix2.png [fix]; [in] setsar=sar=1,format=rgba [inf]; [inf][fix] blend=all_mode=overlay:all_opacity=1,format=yuva422p10le [out]" -q:v 1 -y xxx.jpg
+
+ffmpeg -i $in -vf "movie=$in2 [fix]; [in] setsar=sar=1,format=rgba [inf]; [inf][fix] blend=all_mode=overlay:all_opacity=1,format=yuva422p10le [out]" -q:v 1 -y $out
+
+for i in "${m4s[@]}"; do
+ffmpeg -y -i $in -i $in2 -filter_complex "blend=c1_mode=$i" $out
+timeout 1 mpv $out
+echo ' ';echo $i;sleep 1.3
+done
+
+for i in "${m4s[@]}"; do
+ffmpeg -i $in -vf "movie=$in2 [fix]; [in] setsar=sar=1,format=rgba [inf]; [inf][fix] blend=c2_mode=$i,format=yuva422p10le [out]" -y $out
+timeout 1 mpv $out
+echo ' ';echo $i;sleep 1.3
+done
+#blend=all_mode=overlay
+
+ffmpeg -i ../temp.png -i ../brown.png \
+-filter_complex "[1]setsar=sar=1,format=rgba,colorchannelmixer=aa=0.5[a];[0][a]overlay" -y o3.jpg;
+
+m4s=(
+'all_mode'
+'c0_mode'
+'c1_mode'
+'c2_mode'
+'c3_mode'
+)
+m4s=(
+'addition'
+'grainmerge'
+'and'
+'average'
+'burn'
+'darken'
+'difference'
+'grainextract'
+'divide'
+'dodge'
+'freeze'
+'exclusion'
+'extremity'
+'glow'
+'hardlight'
+'hardmix'
+'heat'
+'lighten'
+'linearlight'
+'multiply'
+'multiply128'
+'negation'
+'normal'
+'or'
+'overlay'
+'phoenix'
+'pinlight'
+'reflect'
+'screen'
+'softlight'
+'subtract'
+'vividlight'
+'xor'
+)
+
+g=minval:b=maxval+minval-val
+https://www.randombio.com/linuxsetup141.html
+
+
+===jx.mp4 txt
+ffmpeg -i jx2.mp4 -vf mpdecimate jx3.mp4
+ffmpeg -i jx3.mp4 -vf tblend=c1_mode=average,framestep=2,minterpolate=fps=10,mpdecimate,sab jx4.mp4
+
+###
+ffmpeg -i jx3.mp4 -vf "select='if(gt(scene,0.01),st(1,t),lte(t-ld(1),1))',setpts=N/15/TB" jx4.mp4
+
+ffmpeg -i jx4.mp4 \
+       -vf select="'gte(scene,0)',metadata=print" -f null ->jx-sc.txt 2>&1
+cat jx-sc.txt|grep score|cut -d'=' -f2 > jx-sc2.txt
+count=0; total=0; for i in $( awk '{ print $1; }' jx-sc2.txt );\
+do total=$(echo $total+$i | bc ); \
+((count++)); done; echo "scale=5; $total / $count" | bc
+
+.06175
+
+#ffmpeg -i jx4.mp4 \
+       -vf "select='if(gt(scene,0.0$g),st(1,t),lte(t-ld(1),.2))', \
+                    decimate=cycle=6,setpts=N/13/TB,minterpolate" jx5.mp4
+ffmpeg -i jx4.mp4 -vf mpdecimate,minterpolate=fps=10 jx5.mp4
+-i jx5.mp4 -vf mpdecimate,sab jx6.mp4
+ 
+ffmpeg -i xz2.mp4 -vf "select='if(gt(scene,0.0835),st(1,t),lte(t-ld(1),1))',setpts=N/14/TB,minterpolate,mpdecimate" xz3.mp4
+#scene,0.82
+
+ffmpeg -i xz1.mp4 -i xz4.mp4 -i xz3.mp4 -i xz02.mp4 \
+-filter_complex \
+"[0:v][1:v]hstack[top]; \
+ [2:v][3:v]hstack[bottom]; \
+ [top][bottom]vstack,format=yuv420p[v] " \
+-map "[v]" -map 0:a xz-xout.mp4
+
+ffmpeg -i xz3.mp4 -i xz4.mp4 -i xz02.mp4 \
+-filter_complex \
+"[0:v:0][1:v:0][2:v:0]hstack=inputs=3" \
+-r 14 -map 0:a xz-xout.mp4

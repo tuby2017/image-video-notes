@@ -1,0 +1,96 @@
+https://github.com/Argon-/mpv-config/blob/master/input.conf
+<key> cycle-values loop-playlist yes no ; show-text "${?=loop-playlist==inf:Looping enabled}${?=loop-playlist==no:Looping disabled}"
+
+ mpv --lavfi-complex="[aid1]asplit=7[a][b][c][d][e][f][g];[a]avectorscope=size=480x480:zoom=2:draw=line:r=25,drawgrid=240:240:color=gray[z];[b]ebur128=video=1:meter=18[q][x];[q]scale=480:480[y];[z][y]hstack[w];[c]showfreqs=fscale=lin:win_size=w4096:cmode=separate:size=480x480:minamp=1e-009,drawgrid=x=0:y=479:w=100:h=60:color=gray[u];[d]showspectrum=size=480x480:overlap=1:slide=scroll:scale=5thrt:mode=combined[t];[t][u]hstack[v];[e]showvolume=r=25:w=960:h=50:t=0:f=0.9,drawtext=font=Arial:fontsize=24:text='1':x=47:y=40:fontcolor=white,drawtext=font=Arial:fontsize=24:text='2':x=77:y=40:fontcolor=white,drawtext=font=Arial:fontsize=24:text='3':x=128:y=40:fontcolor=white,drawtext=font=Arial:fontsize=24:text='4':x=206:y=40:fontcolor=cyan,drawtext=font=Arial:fontsize=24:text='5':x=330:y=40:fontcolor=white,drawtext=font=Arial:fontsize=24:text='6':x=528:y=40:fontcolor=red,drawtext=font=Arial:fontsize=24:text='7':x=842:y=40:fontcolor=pink[s];[f]showcqt=size=960x180:r=25:bar_g=7:timeclamp=0.5[r];[g]aphasemeter=size=960x40:mpc=red[h][p];[h]anullsink;[v][w][r][p][s]vstack=inputs=5[vo];[x]anull[ao]" $m3u_url
+
+mpv --lavfi-complex="[aid1]asplit=2[ao][d]; [d]showspectrum=size=850x480:overlap=1:slide=scroll:scale=log:saturation=0.2:mode=combined[vo]"
+
+mpv --lavfi-complex="[aid1]asplit[ao][a]; [a]avectorscope[vo]" 10-flute_whistle_bottle.ogg
+
+mpv --lavfi-complex='[aid1] asplit [ao] [v] ; [v] showwaves=mode=line:split_channels=1 [vo]' $music_file
+
+minamp=1e-009,drawgrid=x=0:y=479:w=100:h=60:color=gray
+
+
+
+mpv --lavfi-complex="[aid1]asplit[ao][a]; [a]showvolume=r=25:w=260:h=50:t=0:f=0.34, \
+drawbox=0:0:260:50:black@0.5:t=max\
+[vo]" $music_file
+
+
+--split 2
+ffplay -f lavfi 'amovie=april.flac,asplit=3[out1][a][b]; [a]showwaves=s=640x240[waves]; [b]showspectrum=s=640x240[spectrum]; [waves][spectrum] vstack[out0]'
+
+mpv --lavfi-complex="[aid1]asplit=3[ao][a][b]; [a]showvolume=r=25:w=260:h=50:t=0:f=0.34[v];[b]showspectrum=s=260x50[s];[v][s] vstack[vo]" $music_file
+--
+
+--split 3
+mpv --lavfi-complex="[aid1]asplit=4[ao][a][b][c]; [a]showvolume=r=25:w=260:h=50:t=0:f=0.34[v];[b]showspectrum=s=260x50:overlap=1:mode=combined[s];[v][s]vstack[k];[c]showcqt=s=260x50:count=4:r=25:bar_g=7:timeclamp=0.5[j];[k][j]vstack[vo]" $music_file
+
+
+mpv --lavfi-complex="[aid1]asplit=4[ao][a][b][c]; [a]showvolume=r=25:w=260:h=50:t=0:f=0.34[v];[b]showspectrum=s=260x50:overlap=1:mode=combined[s];[v][s]vstack[k];[c]showcqt=s=260x50:count=14:r=5:sono_v=6:axis=0:bar_g=7:timeclamp=0.5[j];[k][j]vstack[vo]" $music_file
+
+--s2
+a=hamming
+
+ mpv --lavfi-complex="[aid1]asplit=4[ao][a][b][c]; [a]showvolume=r=25:w=260:h=50:t=0:f=0.34[v];[b]showfreqs=mode=line:size=260x150:win_func="$a":colors=black|red[s];[v][s]vstack[vo]" $music_file
+
+mpv --lavfi-complex="[aid1]asplit=4[ao][a][b][c]; [a]showvolume=r=25:w=260:h=50:t=0:f=0.34[v];[b]showfreqs=mode=line:fscale=log:size=260x200:r=3[s];[v][s]vstack[vo]" $music_file
+
+mpv --lavfi-complex="[aid1]asplit=4[ao][a][b][c]; [a]showvolume=r=20:o=v:w=260:h=50:t=0:f=0.34[v];[b]showfreqs=mode=line:fscale=log:size=101x101[s];[v][s]vstack[vo]" $music_file
+
+mpv --lavfi-complex="[aid1]asplit=4[ao][a][b][c]; [a]showvolume=r=20:o=v:w=260:h=50:t=0:f=0.34[v];[b]showspectrum=s=101x150:orientation=horizontal:mode=separate:scale=cbrt:color="$a":saturation=4.5[s]; \
+[v][s]vstack[vo]" $music_file
+
+--small right-top
+mpv --lavfi-complex="[aid1]asplit=3[ao][a][b]; [a]showvolume=r=12:w=200:h=15:t=0:f=0.34[v];[b]showspectrum=s=100x31:slide=2:scale=cbrt:color=moreland:saturation=4.5[s]; \
+[s][v]hstack[vo]" $music_file 
+
+--vd-lavc-threads=2 --vd-lavc-skipframe=bidr --vf=lavfi=yadif:o="threads=2,thread_type=slice" --msg-level=all=warn,ao/alsa=error $m3u_url
+
+--vf=lavfi="hflip"
+--vf="vflip,mirror"
+transpose=1
+--demuxer-thread=yes --demuxer-readahead-secs=200
+
+mpv --lavfi-complex="[aid1]asplit=3[ao][a][b]; [a]showvolume=r=12:w=200:h=15:s=1:v=0:t=0:f=0.34[v];[b]showspectrum=s=100x31:slide=2:scale=cbrt:color=moreland:saturation=4.5[s]; \
+[s][v]hstack[vo]" --vf=lavfi="hflip" --msg-level=all=warn,ao/alsa=error $m3u_url
+
+
+--showcqt vstack
+mpv --lavfi-complex="[aid1]asplit=3[ao][a][b]; \
+[a]showcqt=size=960x180:r=15:bar_g=2:bar_t=0.5:bar_v=9:sono_v=17:tc=0.4:count=2:timeclamp=0.5[v]; \
+[b]showspectrum=s=960x150:scale=cbrt:color="$a":saturation=4.5[s]; \
+[v][s]vstack[vo]" $music_file
+
+a=7;b=25
+mpv --vd-lavc-threads=2 --vd-lavc-skipframe=bidir \
+--lavfi-complex="[aid1]asplit[ao][a]; \
+[a]showcqt=size=960x180:r=12: \
+bar_g=3:bar_t=0.02:bar_v='$b': \
+sono_v='$a':sono_g=2: \
+tc=0.5:count=2:timeclamp=0.5: \
+csp=smpte170m[vo]" \
+$music_file
+
+mpv --vd-lavc-threads=2 --vd-lavc-skipframe=bidir \
+--lavfi-complex="[aid1]asplit[ao][a];[a]showcqt=size=960x180:r=12:axis=0[vo]" \
+$pls_url
+
+--overlay
+mpv --vd-lavc-threads=2 --vd-lavc-skipframe=bidir \
+--lavfi-complex="[aid1]asplit=3[ao][a][d]; \
+[a]showvolume=r=25:w=960:h=50:t=0:f=0.9[v]; \
+[d]aphasemeter=size=960x40:mpc=red[m][k]; \
+[m]anullsink;
+[v][k]overlay[vo]" \
+"$music_file"
+
+--
+wh=400x300;a=4;s=4.5
+mpv --vd-lavc-threads=2 --vd-lavc-skipframe=bidir --lavfi-complex="[aid1]asplit[ao][a];[a]showspectrum=s='$wh':
+scale=cbrt:color="$a":saturation='$s'[vo]" --fps=15 --hr-seek $music_file
+
+
+ffmpeg -y -i $music_file \
+-lavfi showspectrumpic=s=hd480:legend=0:color=6:saturation=3:scale=1:gain=3,format=yuv420p SPECTROGRAM.png
