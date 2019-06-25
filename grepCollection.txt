@@ -1,0 +1,131 @@
+##find and gather ffmpeg related files. Rename duplicate names, Symlink to a folder, Hard copy to a sub-folder, etc
+
+grep -lR 'ffmpeg' 2>/dev/null > /tmp/tm2;cat tm2|sort|uniq > ffg
+cat tm2|rev|cut -d"/" -f1,2|rev|uniq >tm3 && wc -l tm3 tm2 #both 55 lines
+cat tm3|cut -d'/' -f2|sort|uniq -c|sort #|wc -l
+      2 a4-p.sh
+      2 a-resize.sh
+      2 resize.txt
+      2 spidy.txt
+      2 th.sh
+      3 waveDiff.sh
+      4 sh.sh
+#sed '/ff/ s/^#*/#/' #comment line base on match string
+sed '/ff/d' # remove line match string
+dup=(a4-p.sh a-resize.sh resize.txt spidy.txt th.sh waveDiff.sh sh.sh)
+tail -n +$(grep -n bin tm2|sed -n 2p|cut -c1,2) tm2 > tm3 
+grep ${dup[@]/#/-e } tm3|rev|sort|rev > tm4
+for i in "${dup[@]}";do sed -i "/$i/d" tm3;done #remove duplicate in tm3
+
+for i in {1..2};do
+[[ -z $next ]] && readarray a < tm3 || readarray a < tm4
+cd ~; for i in "${a[@]}";do test -h "$i" && echo "$i";done #check symlink
+cd ~/Downloads/Afmg
+#for i in "${a[@]}";do z=$(echo "$HOME/$i");test -h $z && echo $i;done
+for i in "${a[@]}";do from=$(echo "$HOME/$i");here=$(echo "`pwd`/");
+	ln -s $bak "$from" "$here";done #symlink to folder #maybe not
+bak="--backup=t";next=2;
+done
+rename 's/((?:\..+)?)\.~(\d+)~$/_$2$1/' *.~*~
+#ls -l filename*
+
+ls -RlhaF .| grep ^l|awk '{print $9 " -> " $10}' > path.txt
+sed -i 's/\*//' path.txt
+for x in {1..2};do cat path.txt|cut -d">" -f$x|cut -d' ' -f$x > /tmp/p$x;done
+jdupes -R -sm Afmg/;jdupes -R -s Afmg/ > /tmp/d;
+#a="$(readlink file)"; diff $a $b
+cat path.txt |grep "resize\|a4\|waveDiff" >/tmp/d1;
+#grep -R string
+cd /tmp/;
+cut -d'/' -f3 d|sed '/^$/d' > d.sort;
+cat d1|cut -d'>' -f1|cut -d" " -f1 > d1.sort;
+#find uniqe line btwn d/d1.sort, map to array a
+mapfile -t a < <(awk 'FNR==NR {a[$0]++; next} !a[$0]' d.sort d1.sort)
+#go back to Afmg/, find array item's target
+#find . -print|grep -i ${a[@]/#/-e }| xargs -L1 readlink #grep ${a[@]/#/-e } d1
+find . -print|grep -i ${a[@]/#/-e }|while read line;do echo -e "$line>\c";readlink "$line";done . path-diffdup.txt
+
+# manual pick one out of duplicates, remove the comment out ones
+# cp path.txt /tmp/tm2 && \
+# grep '#' path-diffdup.txt |awk -F '#|>' '{print $2}'|while read ij;do \
+# del=$(readlink "$ij"| sed "s;$HOME/;;"); sed -i "\|$del|d" /tmp/tm2;done
+mapfile -t dup < <(grep '#' path-diffdup.txt |awk -F '#|>' '{print $2}'|xargs -L1 readlink| sed -e "s;$HOME/;;") ## -e "s/.*/'&'/")
+# not mine array
+readarray not < notmine #&& mkdir notuse; 
+grep -v "${dup[@]/#/-e }" path.txt > /tmp/tm2
+#echo -e "$(grep -v ${not[@]/#/-e } /tmp/tm2|sort -k3)" > upload.txt
+# get lines exclude from array, sort by colume 3
+grep -v ${not[@]/#/-e } /tmp/tm2|sort -k3 > upload.txt
+# compare current files and upload list
+# get dir names to not array
+mapfile -t not < <(ls -d */|cut -d'/' -f1)
+# list all files in Afmg/, remove line contain : at the end, extact line match of not array
+ls -R |sed '/:/d;/^$/d'|grep -vFx ${not[@]/#/-e } > /tmp/current
+cat upload.txt| cut -d' ' -f1 > /tmp/upload
+# diff to array, exclude some files
+mapfile -t not < <(grep -Fvf /tmp/upload /tmp/current|grep -vE 'notmine|path|upload')
+# move stuff to notuse from array
+mv `find . -print|grep -i ${not[@]/#/-e }` notuse/
+
+# symlink target last modify date
+mnth=$(date -d" " +"\-%m\-") #currunt month 
+#grep '\-05\-'|\
+stat -c "%n %y" $(readlink *)|sed "s;$HOME/;;"| grep $mnth|\
+awk '{print $1,$2}'|column -t;
+
+##compare files length
+mapfile -t a < <(cut -d' ' -f1 upload.txt) #|sed -e 's;-;\\-;g')
+echo ${a[@]}|tr " " "\n"|sort > /tmp/upload
+## grep is fucking shit with array
+# sed -e 's`[][\\/.*^$-]`\\&`g'
+# find . |grep -Fi ${a[@]/#/-e }|wc -l
+# cat file| xargs -n1 basename
+find . |grep -i ${a[@]/#/-e } > /tmp/symlink && \
+cat /tmp/symlink |xargs -n1 basename|sort > /tmp/tm4
+wc -l /tmp/tm4 /tmp/upload
+# find fuckup part, remove
+mapfile -t not < <(grep -xFvf /tmp/upload /tmp/tm4|xargs -i grep {} /tmp/symlink); grep -v ${not[@]/#/-e } /tmp/symlink > /tmp/s2 
+wc -l /tmp/s2; # cp /tmp/s2 symlink.txt
+# list line length: wc -l *
+# total line count, not ffmpeg
+cat symlink.txt|xargs wc -l|column -t|sort -k1V > count
+# cp symlink list to folder
+readarray arr < symlink.txt
+cp `find .|grep -i ${arr[@]/#/-e }` Afcopy/ #../Afcopy
+# word count #grep -o "echo" FILE | wc -l
+# cut -d' ' -f1 ../upload.txt|xargs -i echo '{} l'
+# xargs -l bash -c 'echo $0;echo 2'
+term=ffmpeg
+#cut -d' ' -f1 ../upload.txt|\
+# ffmpeg count, filename
+ls| xargs -l bash -c 'echo -e "$0  \c";grep -o '$term' $0 | wc -l'| awk '{print $2,$1}'|column -t|sort -V > termCount.txt
+# https://stackoverflow.com/questions/3770432/xargs-with-multiple-arguments
+#'echo -e "$0 \c";echo $(grep -o '$term' $0 | wc -l;cat $0|wc -l)')|column -t
+# file name, ffmpeg count, line count
+echo -e "1 2 3\n $(ls| xargs -l bash -c 'echo -e "$0 \c";echo $(grep -o '$term' $0 | wc -l;cat $0|wc -l)'|sort -k2 -n)"|column -t > ../00-count2.txt
+#remove excute permission
+chmod 0644 Afcopy/*
+#extract rename section
+j=$(cat FmgCollecton.txt |grep -n 'sword\|distort-v'|sed -n 2,3p|cut -d':' -f1|paste -s -d, -); sed -n $j\p FmgCollecton.txt > /tmp/t1;
+cat /tmp/t1 |grep -v '\-\-' > /tmp/t2;
+cat /tmp/t2|cut -d'>' -f2| sed 's/ test/-test/;s/cli /cli-/'|tr " " '_' > /tmp/t4; mapfile -t a < <(cat /tmp/t4|grep -nv '\.'|cut -d':' -f1)
+cut -d'>' -f1 /tmp/t2 > /tmp/t3;
+for i in "${a[@]}";do ext=$(sed -n $i\p /tmp/t3|cut -d' ' -f1 |cut -d'.' -f2|tr -d ','); sed -i $i"s/$/.$ext/" /tmp/t4 ;done
+paste -d'>' /tmp/t3 /tmp/t4 > /tmp/t2
+cat /tmp/t1 |grep '\-\-' >> /tmp/t2
+## risky: cp FmgCollecton t0; sed -i $j\d t0;line=$(echo $j|cut -d, -f1);
+## line=$((line-1));sed -e "${line}r t2" t0> tx; mv tx t0
+#https://stackoverflow.com/questions/14044032/insert-the-contents-of-a-file-to-another-in-a-specific-line-of-the-file-that-is
+
+#cat file |cut -d'>' -f2|sort|uniq|wc -l
+##rename, edit, or remove, 36 files to git
+--waveDiff_2.sh
+--spidy.txt >notes-2
+--sword_id_gif.txt >convert_to_webm.txt
+...
+toFrame2.sh, edit notes >IM_brown_mix-2.sh
+
+#list start here
+bin/ff
+...
+z-文件

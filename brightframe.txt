@@ -1,0 +1,125 @@
+##get image hsv brightness
+convert img_foo -colorspace hsb  -resize 1x1 -format "%[fx:floor(100*b)]" info:-
+### not tested
+#!/bin/bash
+#./extract_script.sh #edit v,vidout,etc. or replace with $1 $2 etc
+v=video_name(fullpath)
+vidout=video_output_NO-audio.mkv
+vfps=6 #vid-framerate < original
+# video frames count
+tf=$(ffprobe -v error -count_frames -select_streams v:0 -show_entries \
+stream=nb_read_frames -of default=nokey=1:noprint_wrappers=1 "$v")
+tf=$(echo ${#tf})
+zr=$(echo "f%0$tf"d) #padding zero
+cd /tmp; 
+mkdir frames;
+# video to frames to folder, at 6 fps. #frames/f024.jpg
+ffmpeg -i $v -vf "fps=$vfps" -q:v 5 -vsync vfr frames/"$zr".jpg
+
+arr=() #array #arr+=('foo')
+cd frames;
+	for i in *jpg;do 
+# rounded brightness percentage
+b=$(convert $i -colorspace hsb  -resize 1x1 -format "%[fx:floor(100*b)]" info:-)
+# how bright, great than a value.
+# for example, add to array if greater than 70. 
+if [[ $b -gt 70 ]];then
+ # grep file number
+ bf=$(echo "$i"|grep -o '[[:digit:]]*') 
+ ## grep -Eo '[0-9]{1,4}' #grep up to 4 digit only, {1,} for more
+ arr+=("$bf"); # echo '$i is bright'
+fi
+	done
+
+range=5 # prev,after bright frame
+# last frame number
+lstf=$(echo ${arr[-1]}|awk '{$0=int($0)}1')
+count=0
+len=${#arr[*]} 
+arr2=()
+
+# generate a list/ranges based on a number sequence/array
+	for i in $(seq 0 $len);do
+count=$((count+1))
+[ $count -gt $len ] && break
+# remove leading zero
+x=$(echo ${arr[i]}| awk '{$0=int($0)}1')
+after=$(( x + range ))
+if [ $after -gt $lstf ];then after=$lstf;endf=1; fi
+prev=$(( x - range ))
+[ $prev -lt 1 ] && prev=1
+# prev .. x .. after
+zr=$(echo "%0$tf"g) #padding zero
+ for i in $(seq -f $zr $prev $after);do
+arr2+=("$i");
+ done
+[ $endf -eq 1 ] && break;
+	done
+
+# sorted unquie value from array
+arr3=($(echo "${arr2[@]}" | tr ' ' '\n'|sort -u))
+echo ${arr3[@]}| ffmpeg -r "vfps" -f image2pipe -i - $vidout
+
+: << '@nouse'
+# or
+printf "file '%s'\n" "${arr3[@]}" > file.txt
+# output timestamp, frame number to file
+ffprobe -select_streams v \
+	-show_entries frame=coded_picture_number,pkt_pts_time -of csv=p=0:nk=1 \
+	-v 0 "$v" > frames-time.txt
+# use arr3 to find the gap
+arr4=($(printf "%s\n" "${arr3[@]}"| awk '{$0=int($0)}1'))
+printf "%s\n" "${arr4[@]}" | awk '{ do \
+	{ for(s=e=$1; (r=getline)>0 && $1<=e+1; e=$1); \
+	print s==e ? s : s",f"e }while(r>0) }'| sed 's/.*/f&./' > frame-range.txt
+
+# matching lines with range
+cat frames-time.txt |cut -d, -f2|sed 's/.*/f&./' > frames-time2.txt
+frt='frames-timeStamp.txt'
+# get colum 1, remove trailing zero
+cat frames-time.txt |cut -d, -f1|awk ' sub("\\.*0+$","") ' > $frt
+
+file="frame-range.txt"
+# file="/tmp/jest"
+	while IFS= read -r line;do
+n1=$(echo $line |cut -d, -f1)
+n2=$(echo $line |cut -d, -f2)
+# match line number of n1,n2
+ft12=$(cat frames-time2.txt|grep -En "f$n1\.|f$n2\."|cut -d':' -f1)
+ft1=$(echo $ft12|cut -d' ' -f1);
+ft2=$(echo $ft12|cut -d' ' -f2);
+timeStamps=$(echo $(sed $t1'q;d' $frt)-$(sed $t2'q;d' $frt))
+arr5=("${arr5[@]}" "$timeStamps")
+	done <"$file"
+
+count=0
+ex=".${v##*.}" #file extension
+filename=$(basename -- "$v")
+filename="${filename// /_}"
+output="${filename%.*}"
+	for i in "${arr5[@]}";do 
+count=$((count+1))
+t1=$(echo $i| cut -d- -f1)
+t2=$(echo $i| cut -d- -f2)
+ffmpeg -ss "$t1" -i "$v" -to "$t2" -c copy $output-x$count$ex
+ 	done
+printf "file '%s'\n" $output-x*.mp4 > vidlist.txt
+ffmpeg -f concat -safe 0 -i vidlist.txt -c copy $output-final$ex && echo done;
+
+
+--https://pastebin.com/VHmL1mci
+-- https://www.researchgate.net/post/By_image_processing_how_can_i_detect_the_brightness_or_the_light_intensity_of_the_camera_frames
+-- https://stackoverflow.com/questions/7935814/how-to-determine-if-image-is-dark-high-contrast-low-brightness
+-- https://www.imagemagick.org/discourse-server/viewtopic.php?t=24067
+-- https://stackoverflow.com/questions/1951506/add-a-new-element-to-an-array-without-specifying-the-index-in-bash
+- https://askubuntu.com/questions/184204/how-do-i-fetch-only-numbers-in-grep
+- https://stackoverflow.com/questions/8789729/how-to-zero-pad-a-sequence-of-integers-in-bash-so-that-all-have-the-same-width
+- https://stackoverflow.com/questions/13648410/how-can-i-get-unique-values-from-an-array-in-bash
+- https://superuser.com/questions/1418972/extract-all-frames-timestamps-with-ffmpeg
+
+- https://unix.stackexchange.com/questions/470073/how-to-collapse-consecutive-numbers-into-ranges
+- https://stackoverflow.com/questions/26809668/collapse-sequential-numbers-to-ranges-in-bash
+- https://stackoverflow.com/questions/15867557/finding-gaps-in-sequential-numbers
+
+#awk 'NR==1{first=$1;last=$1;next} $1 == last+1 {last=$1;next} {print first,last;first=$1;last=first} END{print first,last}'
+@nouse
