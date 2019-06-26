@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# watercolor and edge detection on image. 2 outputs
+# edge detection on image. 1 outputs
+# usage: ./wnline-v2.sh input_pic ## picName-ln.jpg
 rz=40
 #sharpen=y
 input="$1";
