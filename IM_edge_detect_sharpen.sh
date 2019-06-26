@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # edge detection (and watercolor, fred script) on image. 1(or 2) outputs
-# usage: ./script.sh img.jpg #output: img-ln.jpg
+# usage: ./wnline.sh img.jpg #output: img-ln.jpg
 rz=35 #resize or not by #
 input="$1";
 # check input
