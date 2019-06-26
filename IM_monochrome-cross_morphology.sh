@@ -39,7 +39,7 @@ fi
 echo $filename ' done';
   done
 #exit
-  for j in ../*.jpeg;do /home/sx/Downloads/Videos/wnline-2.sh $j;  done
+  for j in ../*.jpeg;do ~/Downloads/Videos/wnline-2.sh $j;  done
   for j in f*-ln.jpeg;do
 i="${j%-ln.*}.jpeg"
 convert $i $j -compose multiply -composite z$i
