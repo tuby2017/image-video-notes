@@ -5,13 +5,13 @@ rz=40
 input="$1";
 # check input
 if [ ! -f "$input" ]; then echo "null file;nothing done";exit 1; fi
+shlgPath=~/Downloads/shadowhighlight 
 ex=".${input##*.}" #file extension
 filename=$(basename -- "$input")
 output="${filename%.*}"
 a="$output"-wc$ex; b="$output"-ln$ex
 tmpr="/tmp/resize".png
 tmpf="/tmp/sharpen".png
-shlgPath=~/Downloads/blueBloom/shadowhighlight 
 
 trap "rm -f $tmpr $tmpf" 0 2 3 15 
 imgWH=$(identify -format "%[fx:w]x%[fx:h]" $input)
@@ -23,13 +23,13 @@ echo -e 'sharpen \c'; $shlgPath -sa 60 -ha 60 -ma 70 $tmpr $tmpf;echo -e ' done;
 [[ -f $tmpr && ! -f $tmpf ]] && tmpf=$tmpr
 [ ! -f $tmpf ] && tmpf=$input; #if var not exist
 
-#echo -e 'watercolor...\c'; ./watercolor -s 15 -e 5 -m 33 -c 5 $tmpf $a;echo $a' done'
 convert $tmpf -colorspace gray -canny 0x1+10%+30% -negate $b;echo $b' done'
 mogrify -resize "$imgWH" -filter triangle -posterize 24 -quality 75 $b 
 exit
+#######end
 
-##end
-##test
+
+# various tests
 cd line; 
 for i in ../b*jpeg;do ./wnline.sh $i;done
 #smoke image
@@ -53,7 +53,7 @@ for i in {1..2};do
   done
 done
 mkdir new;cd new;
-for i in ../f*jpg;do /home/sx/Downloads/Videos/wnline-2.sh $i;done
+for i in ../f*jpg;do ~/Downloads/Videos/wnline-2.sh $i;done
 	#f0001-1-ln.jpg, f0001-2-ln.jpg
 for i in *-1-ln.jpg;do
 	j=$(echo $i|cut -d- -f1)
@@ -62,14 +62,14 @@ for i in *-1-ln.jpg;do
 	convert $i $s -compose multiply -composite $o
 done
 convert $z -evaluate subtract 7% -colorspace gray -sigmoidal-contrast 3x65% -monochrome -filter triangle -quality 75 -strip x.jpg 
-#jojo
+#jo-jo
 convert $b   -morphology Thicken ConvexHull  $c
 convert $z -resize 45% -evaluate subtract 7% -colorspace gray \
 	-sigmoidal-contrast 3x65% \
 	+dither -colors 6 -depth 4 -morphology close octagon:3 \
 	-filter triangle -quality 75 -strip x.jpg
 convert $z -resize 40% -monochrome -filter triangle -quality 75 -posterize 4 -strip  x.jpg
-#shield hero
+#hero-shield 
 -resize 40%
 convert $z -colorspace gray \
 +dither -colors 12 -depth 4 -morphology close octagon:3 \
