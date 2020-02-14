@@ -1,0 +1,113 @@
+##	tv encoding, dvd burning
+##		lsg = ls|grep
+
+blank dvd 4.3gb. 3.9 gb actual
+848x480 23fps 499kb -low quality
+ffmpeg -i "tv episode title.mp4" -vf scale=848:480 -crf 32 -c:a copy S01E01.mp4
+
+##	-crf 29 ~ 32 or 437kb
+## convert mkv to mp4 if video encoded in h264 format. See cli-ff
+for i in {06..15};do ff m0 "TV.S02E$i.*.mkv";done
+
+ffmpeg -i "tv_episode_title_mp4" -vf scale=640:360 -crf 31 -c:a copy S01E01.mp4
+
+
+# -vf scale=848:480 -crf 28 -c:v libx264 -c:a copy # -crf 30
+for i in {04,19};do v=`ls|grep "E$i -"`; ffmpeg -i "${v}" -vf scale=640:360 -crf 29 -c:a copy S03E"$i".mp4;done
+
+#	ffmpeg -i tv.avi -i tv.srt -acodec libfaac -ar 48000 -ab 128k -ac 2 -vcodec libx264 -vpre ipod640 -s 480x240 -b 256k -scodec mov_text tv_ipod_res.m4v
+## add subtitle test, video re-encoded
+ffmpeg -i "tv_episode_title_mp4" -i "Subs/tv_episode_title_srt" -scodec mov_text -c:a copy -vf scale=848:480 -crf 32
+
+##	rename files in xfburn with xdotool
+sleep 10;for i in {05..15};do 
+sleep .5;
+xdotool key --clearmodifiers Return;
+sleep .3;
+xdotool type --clearmodifiers "S01E$i.mp4"; sleep .3;
+xdotool key --clearmodifiers Return; sleep 1;
+xdotool key --clearmodifiers Home; sleep .3;
+xdotool key --clearmodifiers Down;
+done
+
+
+##	symlink files to target folder
+target="/symlink/destination_folder/path"
+for f in $(ls -d $PWD/*); do ln -s "${f}" $target; done && ls -al $target
+
+find -type l -delete
+
+##	file-name - E01 - title to file-nameE01
+a="bfile-name - E01 - title"
+v="echo $a|sed 's/ - /./g'|cut -f1,2 -d."
+
+##	filenameE01 stuff.mp4 to filenameE01.mp4
+#newNM=$(basename "$f" | cut -d' ' -f2|sed 's/$/.mp4/')
+#ln -s "${f}" $target/"$newNM"
+
+target="/home/cd-a/tv_sub"
+for f in *mp4; do
+newNM=$(echo "$f" | cut -d' ' -f2|sed 's/$/.mp4/')
+ln -s "$PWD/$f" $target/"$newNM"; done 
+
+##	count audio channel
+ffprobe -show_entries stream=channels -of compact=p=0:nk=1 -v 0 *E04*
+##	or 
+ffprobe -v error -show_entries stream=codec_type *E03* | grep "codec_type=audio" | wc -w
+
+##	color info 
+https://kdenlive.org/en/project/color-hell-ffmpeg-transcoding-and-preserving-bt-601/
+ffprobe -v error -show_streams $out | grep color_
+
+##	color format
+p='-c:v libx264 -preset slow -color_primaries 1 -color_trc 1 -colorspace 1 -movflags +faststart -vf format=yuv420p,scale=640:-2 -bufsize 2M -threads 2'
+q='-c:a aac -b:a 65k'
+#ffmpeg -i $in $p -crf 21 $q $out
+
+target="cd-a/s2"
+for i in {11..14};do a=$(lsg E"$i");b=$(echo $a|cut -d. -f2|sed 's/$/.mp4/');
+ffmpeg -i $a $p $q -crf 26 $b; sleep 2;mv $b $target; done;
+
+##	fewhd
+q='-c:a aac -strict experimental -b:a 65k'
+for i in *mp4;do a=$(echo "$i"|cut -d' ' -f3|sed 's/$/.mp4/');
+ffmpeg -i "$i" $p $q -crf 24 $b; sleep 2;mv $b $target; done;
+
+
+##	cartoon
+mkv fragment errors, fix with re-download https://forum.videohelp.com/threads/387590-ffmpeg-convert-from-mkv-to-mp4-%5Bmatroska-webm-0x1d06640%5D-Read-error-at
+
+sub lang code, doesn't work well 
+https://www.science.co.il/language/Codes.php
+https://en.wikibooks.org/wiki/FFMPEG_An_Intermediate_Guide/subtitle_options#Set_Subtitle_Language
+https://video.stackexchange.com/questions/22197/ffmpeg-how-to-add-several-subtitle-streams
+
+for i in {01..10};do ffmpeg -i "cartoon_E$i" \
+-hide_banner -crf 17 -ac 1 -tune animation \
+-color_primaries 1 -color_trc 1 -colorspace 1 -movflags +faststart -vf format=yuv420p -bufsize 2M -threads 3 \
+"E$i".mp5;done
+
+##	does not work well
+for i in {01..10};do
+sub_en="file_srt"
+sub_zh="file_srt"
+ffmpeg -i "E$i.mp4" -i "$sub_en" -i "$sub_zh" \
+-map 0:v -map 0:a -map 1 -map 2 \
+-c:v copy -c:a copy -c:s mov_text \
+"../E$i.mp4"
+done
+#-metadata:s:s:0 language=eng -metadata:s:s:1 language=chi \
+
+mpv subs controls/shotcut
+ j to switch lang, v to hide/show, r/t to move up/down
+ --sub-file srt_file in cli
+
+
+for i in {03..24};do wget --tries=3 -b "http://url/tv.S00E$i";done
+
+for i in {01..23};do if [ $i != 4 ];then wget --tries=3 -bq "url/tv.S00E$i";fi; done
+
+ps aux | grep wget	## check procs
+
+##	find missing number in a sequence
+for i in {01..24};do if [ ! -f *E$i* ];then echo $i;fi;done
